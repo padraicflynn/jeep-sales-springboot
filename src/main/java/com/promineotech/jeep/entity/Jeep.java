@@ -2,23 +2,20 @@ package com.promineotech.jeep.entity;
 
  
 import java.math.BigDecimal;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
  
-
-
-
 @Data
-
 @Builder
-
  @NoArgsConstructor
- 
  @AllArgsConstructor
- 
-  
 
 public class Jeep {
 
@@ -35,5 +32,12 @@ public class Jeep {
   private BigDecimal basePrice;
   
   
+  //work around for changing version dependencies 
+  @JsonIgnore
+  public Long getModelPK() {
+    return modelPK;
+  }
   
 }
+
+

@@ -24,8 +24,9 @@ import io.swagger.v3.oas.annotations.*;
 
 public interface JeepSalesController {
   
-  @GetMapping
-  @ResponseStatus(code = HttpStatus.OK)
+  
+  
+  //api responses: we see these in the swagger web api
   
   @Operation (
       summary = "Returns a list of Jeeps",
@@ -48,9 +49,13 @@ public interface JeepSalesController {
           @Parameter(name = "trim", allowEmptyValue = false, required = false, description = "The trim level (i.e., 'Sport'")
       }
       )
+  
+  @GetMapping
+  @ResponseStatus(code = HttpStatus.OK)
  List<Jeep> fetchJeeps(
       @RequestParam(required = false)
       JeepModel model,
       @RequestParam(required = false)
       String trim);
+  
 }
