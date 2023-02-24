@@ -64,19 +64,13 @@ class FetchJeepTest {
   assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   
   
-//  
-////And: the actual list returned is the same as the expected list
-//  List<Jeep> actual = response.getBody();
-//  List<Jeep> expected = buildExpected();  
-//  
-//  actual.forEach(jeep -> jeep.setModelPK(null));
-//  
-//  assertThat(response.getBody()).isEqualTo(expected);
-
   
   //########################################################################################################################
   //This is the method in step 6, comment this out when making the video and add it back when you get to that step
   // And then: actual list is returned as the expected list
+  
+// 
+  
   List<Jeep> expected = buildExpected();
   
   //print the two jeeps we asked with the variables that we manually put in:
@@ -85,8 +79,13 @@ class FetchJeepTest {
   //check that the got response is what is expected 
 assertThat(response.getBody()).isEqualTo(expected);
   
+//method break
   }
 
+//remove bracket above when taking this out for video
+
+  //***comment out step 6 **************************************************************************************************************************************
+   
   //method for returning an expected list of jeep, making a new list and returning it
   private List<Jeep> buildExpected() {
  
@@ -116,6 +115,21 @@ assertThat(response.getBody()).isEqualTo(expected);
   }
  }
   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   //code used in video
 
