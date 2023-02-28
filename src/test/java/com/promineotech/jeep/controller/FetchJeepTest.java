@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 
 
+
 import static org.junit.jupiter.api.Assertions.*;
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.jupiter.api.Disabled;
@@ -28,6 +30,7 @@ import org.springframework.test.jdbc.JdbcTestUtils;
 import com.promineotech.jeep.controller.support.FetchJeepTestSupport;
 import com.promineotech.jeep.entity.Jeep;
 import com.promineotech.jeep.entity.JeepModel;
+ 
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 
@@ -60,7 +63,7 @@ class FetchJeepTest {
   ResponseEntity<List<Jeep>> response = 
       getRestTemplate.exchange(uri,  HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
   
-  // Then: a success, 200 OK response status code is returned 
+  //And Then: a success, 200 OK response status code is returned 
   assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   
   
@@ -70,8 +73,10 @@ class FetchJeepTest {
   // And then: actual list is returned as the expected list
   
 // 
-  
+ // List<Jeep> actual = response.getBody();
   List<Jeep> expected = buildExpected();
+  
+  //actual.forEach(jeep -> jeep.setModelPK(null));
   
   //print the two jeeps we asked with the variables that we manually put in:
    System.out.println(expected);
@@ -110,7 +115,7 @@ assertThat(response.getBody()).isEqualTo(expected);
        .build());
    
    // @formatter:on  
-   
+   Collections.sort(list);
    return list;
   }
  }

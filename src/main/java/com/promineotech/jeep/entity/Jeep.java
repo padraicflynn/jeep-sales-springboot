@@ -2,6 +2,8 @@ package com.promineotech.jeep.entity;
 
  
 import java.math.BigDecimal;
+import java.util.Comparator;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +19,7 @@ import lombok.ToString;
  @NoArgsConstructor
  @AllArgsConstructor
 
-public class Jeep {
+public class Jeep implements Comparable<Jeep> {
 
   private Long modelPK;
   
@@ -32,10 +34,23 @@ public class Jeep {
   private BigDecimal basePrice;
   
   
-  //work around for changing version dependencies 
+
   @JsonIgnore
   public Long getModelPK() {
     return modelPK;
+  }
+  
+  @Override 
+  public int compareTo(Jeep that) {
+	   
+	  // Formatter:off
+	  return Comparator
+			  .comparing(Jeep::getModelId)
+			  .thenComparing(Jeep::getTrimLevel)
+			  .thenComparing(Jeep::getNumDoors)
+			  .compare(this,  that);
+	  
+	  // formatter:on
   }
   
 }
