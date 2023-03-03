@@ -6,17 +6,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 
 
+
 import static org.junit.jupiter.api.Assertions.*;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import javax.management.RuntimeErrorException;
+
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.mockito.Mockito.doThrow;
+
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
@@ -27,28 +41,108 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlConfig;
 import org.springframework.test.jdbc.JdbcTestUtils;
+
+import com.promineotech.jeep.Constants;
 import com.promineotech.jeep.controller.support.FetchJeepTestSupport;
 import com.promineotech.jeep.entity.Jeep;
 import com.promineotech.jeep.entity.JeepModel;
+import com.promineotech.jeep.service.JeepSalesService;
  
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 
-@ActiveProfiles("test")
-
-@Sql(scripts = { 
-    "classpath:flyway/migrations/V1.0__Jeep_Schema.sql",
-    "classpath:flyway/migrations/V1.1__Jeep_Data.sql"},
-config = @SqlConfig(encoding = "utf-8"))
 
 class FetchJeepTest {
+	
+	@Nested
+	@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+	@ActiveProfiles("test")
+	@Sql(scripts = { 
+	    "classpath:flyway/migrations/V1.0__Jeep_Schema.sql",
+	    "classpath:flyway/migrations/V1.1__Jeep_Data.sql"},
+	config = @SqlConfig(encoding = "utf-8"))
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!tests that pollute context!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+class TestsThatPolluteTheApplicationContext {
+		 @Autowired
+		  private TestRestTemplate getRestTemplate;
+		  @LocalServerPort
+		  private int serverPort;
+	 @MockBean
+	 private JeepSalesService jeepSalesService;
+		
+	 @Test
+	  void testThatAnUnplannedErroresultsInA500Status() {
+	    
+	  JeepModel model = JeepModel.WRANGLER;
+	  
+	  String trim = "INVALID";
+	  
+	  //***********in the video he uses getBaseUri() instead of serverPort, makes s difference?***********
+	  String uri = String.format("http://localhost:%d/jeeps?model=%s&trim=%s", serverPort, model, trim);
+	  
+	  doThrow(new RuntimeException("Oh no, Error!")).when(jeepSalesService).fetchJeeps(model, trim);
+
+	  //When: a connection is made to the URI
+	  ResponseEntity<Map<String, Object>> response = 
+	      getRestTemplate.exchange(uri,  HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
+	   
+	  //Then: a not found 500 INTERNAL SERVER ERROR
+	  assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+	  
+	  //And Error message is returned 
+	 Map<String, Object> error = response.getBody();
+	  
+	 assertErrorMessageValid(error, HttpStatus.INTERNAL_SERVER_ERROR);
+	 
+		
+	}
+
+	 
+	 
+	 
+	 
+	 
+	 
+
+private void assertErrorMessageValid(Map<String, Object> error, HttpStatus status) {
+	// @formatter:off
+	 assertThat(error)
+	 .containsKey("message")
+	 .containsEntry("status code", status.value())
+	 .containsEntry("uri", "/jeeps")
+	 .containsKey("timestamp")
+	 .containsEntry("reason", HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
+	 
+	 
+	 // @formatter:on
+}
   
+
+	}
+
+	
+	
+
+
+
+
+
+	
+	// ############tests that do not pollute start here
+	
+	@Nested
+	@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+	@ActiveProfiles("test")
+	@Sql(scripts = { 
+	    "classpath:flyway/migrations/V1.0__Jeep_Schema.sql",
+	    "classpath:flyway/migrations/V1.1__Jeep_Data.sql"},
+	config = @SqlConfig(encoding = "utf-8"))
+	class TestsThatDoNotPolluteTheApplicationContext {
   @Autowired
   private TestRestTemplate getRestTemplate;
-  
   @LocalServerPort
   private int serverPort;
   
+  // &*&*&*&*&*&*&TEST ONE*&*&*&*&*&*&*&
   @Test
   void testThatJeepsAreReturnedWhenAValidModelAndTrimAreSupplied() {
     
@@ -66,13 +160,10 @@ class FetchJeepTest {
   //And Then: a success, 200 OK response status code is returned 
   assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   
-  
-  
-  //########################################################################################################################
-  //This is the method in step 6, comment this out when making the video and add it back when you get to that step
+ 
   // And then: actual list is returned as the expected list
   
-// 
+
  // List<Jeep> actual = response.getBody();
   List<Jeep> expected = buildExpected();
   
@@ -87,10 +178,7 @@ assertThat(response.getBody()).isEqualTo(expected);
 //method break
   }
 
-//remove bracket above when taking this out for video
-
-  //***comment out step 6 **************************************************************************************************************************************
-   
+   //*****************************builder!**********************************************************
   //method for returning an expected list of jeep, making a new list and returning it
   private List<Jeep> buildExpected() {
  
@@ -118,60 +206,113 @@ assertThat(response.getBody()).isEqualTo(expected);
    Collections.sort(list);
    return list;
   }
- }
+  //**********************************************end builder*************************************************************
   
+  //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^second, new test method^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  @Test
+  void testThatAnErrorMessageIsReturnedWhenAnUnknownTrimIsSuppllied() {
+    
+  JeepModel model = JeepModel.WRANGLER;
+  
+  String trim = "Unknown value";
+  
+  //***********in the video he uses getBaseUri() instead of serverPort, makes s difference?***********
+  String uri = String.format("http://localhost:%d/jeeps?model=%s&trim=%s", serverPort, model, trim);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  //code used in video
-
+  //When: a connection is made to the URI
+  ResponseEntity<Map<String, Object>> response = 
+      getRestTemplate.exchange(uri,  HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
+   
+  //Then: a not found 404 is returned 
+  assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+  
+  //And Error message is returned 
+ Map<String, Object> error = response.getBody();
+  
+ assertErrorMessageValid(error, HttpStatus.NOT_FOUND);
+ 
+ 
+ // @formatter:on
+//method break
+  }
+  
+  
+  //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&   end second test method   &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+  
+  //**************************************************** start third test ******************************************************************
   /*
-  @Test
-  void testThatJeepsAreReturnedWhenAValidModelAndTrimAreSupplied() {
-     // Given: a valid model, trim and URI
-    JeepModel model = JeepModel.WRANGLER;
-    String trim = "Sport";
-    String uri = String.format("%s?model=%s&trim=%s", getBaseUri(), model, trim);
-    
-    System.out.println(uri);
-    
-    
-    // When: a connection is made to the URI
-    ResponseEntity<Jeep> response = getRestTemplate().getForEntity(uri, Jeep.class);
-    
-    // Then: a success, or (ok - 200) is returned 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-  }
+  @ParameterizedTest
+  @MethodSource("com.promineotech.jeep.controller.FetchJeepTest#parametersForInvalidInput")
+  void testThatAnErrorMessageIsReturnedWhenAnInvalidTrimIsSuppllied(String model, String trim, String reason) {
+	    
+	 
+	  
+	 
+	  String uri = String.format("http://localhost:%d/jeeps?model=%s&trim=%s", serverPort, model, trim);
 
+	  //When: a connection is made to the URI
+	  ResponseEntity<Map<String, Object>> response = 
+	      getRestTemplate.exchange(uri,  HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
+	   
+	  //Then: 
+	  assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+	  
+	  //And Error 
+	 Map<String, Object> error = response.getBody();
+	  
+	 
+	 //????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+	assertErrorMessageValidTwo(error, HttpStatus.BAD_REQUEST);
+	//method break
+	  }
+  //&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& end third test &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
-*/
- /*
-  * //disabled for now while we run the above test
-  //@Disabled
-   * 
-  @Autowired
-  private JdbcTemplate jdbcTemplate;
-  //test the database with the application-test.yaml we just made
-  @Test
-  void testDb() {
-    int numrows = JdbcTestUtils.countRowsInTable(jdbcTemplate, "customers");
-    System.out.println("num=" + numrows);
-  }
   */
-
-  
   
 
+private void assertErrorMessageValid(Map<String, Object> error, HttpStatus status) {
+	// @formatter:off
+	 assertThat(error)
+	 .containsKey("message")
+	 .containsEntry("status code", status.value())
+	 .containsEntry("uri", "/jeeps")
+	 .containsKey("timestamp")
+	 .containsEntry("reason", HttpStatus.NOT_FOUND.getReasonPhrase());
+	 
+	 
+	 // @formatter:on
+}
+  
+/*
+private void assertErrorMessageValidTwo(Map<String, Object> error, HttpStatus status) {
+	// @formatter:off
+	 assertThat(error)
+	 .containsKey("message")
+	 .containsEntry("status code", status.value())
+	 .containsEntry("uri", "/jeeps")
+	 .containsKey("timestamp")
+	 .containsEntry("reason", HttpStatus.BAD_REQUEST.getReasonPhrase());
+	 
+	 
+	 // @formatter:on
+}
+*/
+
+
+
+
+static Stream<Arguments> parametersForInvalidInput(){
+	// @formatter: off
+	return Stream.of(
+			arguments("WRANGLER", "$$%$%$%$%$", "Trim contains -not letters."),
+	arguments("WRANGLER", "C".repeat(Constants.TRIM_MAX_LENGTH + 1), "Trim to long"),
+	arguments("INVALID", "Sport", "Model is not enum value")
+	
+			);
+	// @formatter:on
+}
+
+	}
+  //package end
+}
+  
