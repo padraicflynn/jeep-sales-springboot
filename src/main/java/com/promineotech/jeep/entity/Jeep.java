@@ -31,6 +31,8 @@ public class Jeep implements Comparable<Jeep> {
   
   private int wheelSize;
   
+  private String colorId;
+  
   private BigDecimal basePrice;
   
   
