@@ -77,7 +77,7 @@ class CreateOrderTest {
 		assertThat(order.getCustomer().getCustomerId()).isEqualTo("MORISON_LINA");
 		assertThat(order.getModel().getModelId()).isEqualTo(JeepModel.COMPASS);
 		assertThat(order.getModel().getTrimLevel()).isEqualTo("Latitude");
-		assertThat(order.getModel().getNumDoors()).isEqualTo(2);
+		assertThat(order.getModel().getNumDoors()).isEqualTo(4);
 		assertThat(order.getColor().getColorId()).isEqualTo("EXT_DIAMOND_BLACK");
 		assertThat(order.getEngine().getEngineId()).isEqualTo("3_0_DIESEL");
 		assertThat(order.getTire().getTireId()).isEqualTo("265_MICHELIN");
@@ -95,7 +95,7 @@ class CreateOrderTest {
 				+ "   \"customer\":\"MORISON_LINA\",\n"
 				+ "	  \"model\":\"COMPASS\",\n"
 				+ "	  \"trim\":\"Latitude\",\n"
-				+ "   \"doors\":2,\n"
+				+ "   \"doors\":4,\n"
 				+ "	  \"color\":\"EXT_DIAMOND_BLACK\",\n"
 				+ "   \"engine\":\"3_0_DIESEL\",\n"
 				+ "	  \"tire\":\"265_MICHELIN\",\n"
